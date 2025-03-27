@@ -1,13 +1,16 @@
 import threading
 from binance.client import Client
-import os
 import time
+import pygame
 
 # Configuración de variaciones y cliente
 VARIACION = 5  # Variación en los últimos 30 minutos (en porcentaje)
 # Variación para pares con volumen menor a 100k (en porcentaje)
 VARIACION_100 = 7
 VARIACION_FAST = 2  # Variación en los últimos 2 minutos (en porcentaje)
+
+pygame.mixer.init()
+pygame.mixer.music.load("piano.wav")
 
 client = Client('', '', tld='com')
 
@@ -90,12 +93,7 @@ def imprimir_resultado(tick, variacion, tipo, info=None):
     """Imprime el resultado de la evaluación."""
     print(f'{tipo}: {tick}')
     print(f'Variación: {variacion}%')
-
-    if info:
-        volumen = formato_volumen(float(info['quoteVolume']))
-        print(f'Volumen: {volumen}')
-        print(f'Precio máx: {info["highPrice"]}')
-        print(f'Precio mín: {info["lowPrice"]}')
+    pygame.mixer.music.play()
     print('')
 
 

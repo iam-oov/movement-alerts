@@ -1,9 +1,10 @@
-def suma(a, b):
-    print(CONFIG)
-    return a + b
+import time
+import pygame
 
+pygame.mixer.init()
+pygame.mixer.music.load("piano.wav")
 
-if __name__ == "__main__":
-    CONFIG = ['hi', 'ho']
-
-    suma(1, 2)
+while True:
+    pygame.mixer.music.play()
+    print("Playing piano")
+    time.sleep(20)
