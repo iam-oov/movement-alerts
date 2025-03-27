@@ -1,0 +1,4 @@
+websocket-client==1.8.0
+python-binance==1.0.28
+pandas==2.2.3
+pynput==1.8.1
