@@ -120,7 +120,7 @@ def print_target(tick, type, current_price):
         sl = round(current_price + (current_price *
                                     constants.STOP_LOSS_PERCENTAGE / 100), 5)
 
-    if (tick not in possible_operations.keys() or not possible_operations[tick]['is_active']) and len(possible_operations) < 4:
+    if tick not in possible_operations.keys() or not possible_operations[tick]['is_active']:
         possible_operations[tick] = {
             'type': type,
             'entry_price': current_price,
