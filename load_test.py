@@ -20,17 +20,31 @@ def run_instance(config):
 # ------------------------------------
 
 
-folder_name = "script_test_a"
-configs = [
+name_block = "bloque/sl"
+config_block = [
     ["1.5", "1.7", "2", "4", "1.5"],
     ["2.0", "1.7", "2", "4", "1.5"],
     ["2.3", "1.7", "2", "4", "1.5"],
     ["2.5", "1.7", "2", "4", "1.5"],
     ["3.0", "1.7", "2", "4", "1.5"],
 ]
+config_sl = [config + [f"log/dev/{name_block}/"]
+             for config in config_block]
 
-configs = [config + [f"log/dev/{folder_name}{i + 1}/"]
-           for i, config in enumerate(configs)]
+name_block = "bloque/rr_1"
+config_block = [
+    ["1.2", "1.2", "2", "4", "1.5"],
+    ["1.5", "1.5", "2", "4", "1.5"],
+    ["1.7", "1.7", "2", "4", "1.5"],
+    ["2.1", "2.1", "2", "4", "1.5"],
+    ["2.5", "2.5", "2", "4", "1.5"],
+    ["2.7", "2.7", "2", "4", "1.5"],
+]
+config_rr_1 = [config + [f"log/dev/{name_block}/"]
+               for config in config_block]
+
+
+configs = config_sl  # + config_rr_1
 
 threads = []
 
