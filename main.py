@@ -30,7 +30,7 @@ _original_print = builtins.print
 print(f'STOP_LOSS_PERCENTAGE: {constants.STOP_LOSS_PERCENTAGE}%')
 print(f'TAKE_PROFIT_PERCENTAGE: {constants.TAKE_PROFIT_PERCENTAGE}%')
 print(f'VARIATION_PERCENTAGE: {constants.VARIATION_PERCENTAGE}%')
-print(f'VARIATION_100_PERCENTAGE: {constants.VARIATION_100_PERCENTAGE}%')
+print(f'VARIATION_100K_PERCENTAGE: {constants.VARIATION_100K_PERCENTAGE}%')
 print(f'VARIATION_FAST_PERCENTAGE: {constants.VARIATION_FAST_PERCENTAGE}%')
 
 
@@ -109,7 +109,7 @@ def process_entry(tick, variation, type, current_price):
     if variation >= constants.VARIATION_PERCENTAGE:
         info = get_ticker_info(tick)
         volume = float(info['quoteVolume'])
-        if volume > 100_000_000 or variation >= constants.VARIATION_100_PERCENTAGE:
+        if volume > 100_000_000 or variation >= constants.VARIATION_100K_PERCENTAGE:
             print_target(tick, type, current_price)
 
 
