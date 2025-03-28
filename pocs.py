@@ -1,15 +1,24 @@
 import sys
-import importlib
+import json
 
-# Definir el módulo base
-module_name = "constants.base"
+# Configuración por defecto (podría venir de un archivo JSON, YAML, etc.)
+config = {
+    "STOP_LOSS_PERCENTAGE": 10,
+    "TAKE_PROFIT_PERCENTAGE": 20,
+    "VARIATION_PERCENTAGE": 30,
+    "VARIATION_100K_PERCENTAGE": 40,
+    "VARIATION_FAST_PERCENTAGE": 50
+}
 
-# Verificar si hay un argumento y si es "dev"
-if len(sys.argv) > 1 and sys.argv[1] == "dev":
-    module_name = "constants.dev"
+# Cargar argumentos de línea de comandos
+args = sys.argv[1:]  # Ignorar el nombre del script
 
-# Importar dinámicamente el módulo correcto
-constants = importlib.import_module(module_name)
+# Si hay argumentos, sobrescribir valores en orden
+for i, key in enumerate(config.keys()):
+    if i < len(args):
+        try:
+            config[key] = int(args[i])  # Convertir a int si es posible
+        except ValueError:
+            pass  # Si no se puede convertir, dejar el valor original
 
-# Acceder a las constantes
-print(f"Usando {module_name}: {constants.SOUND}")
+print("Configuración final:", config)
