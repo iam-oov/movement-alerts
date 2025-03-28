@@ -1,5 +1,6 @@
 from binance.client import Client
 from colorama import init, Fore
+import builtins
 import os
 import pygame
 import subprocess
@@ -14,10 +15,22 @@ print('PIN:', PIN)
 # import dinamically the correct module
 module_name = 'constants.base'
 log_path = f'log/base/{PIN}'
+is_dev = False
 if len(sys.argv) > 1 and sys.argv[1] == 'dev':
     module_name = 'constants.dev'
     log_path = f'log/dev/{PIN}'
+    is_dev = True
+
 constants = importlib.import_module(module_name)
+_original_print = builtins.print
+
+
+def custom_print(*args, **kwargs):
+    if is_dev:
+        _original_print(*args, **kwargs)  # Solo imprime si is_dev es True
+
+
+builtins.print = custom_print
 
 if constants.SOUND['ACTIVE']:
     pygame.mixer.init()

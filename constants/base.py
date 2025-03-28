@@ -11,8 +11,8 @@ CLOSE_NOTIFICATION_TIMEOUT = 15  # seconds
 EVALUATION_CYCLE_TIME = 120  # seconds
 SCAN_TICKER_CYCLE_TIME = 30  # seconds
 SOUND = {
+    'ACTIVE': True,
     'PATH': 'media/piano.wav',
-    'ACTIVE': False
 }
 
 # Operation types
