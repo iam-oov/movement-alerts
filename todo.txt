@@ -1,0 +1,3 @@
+- sacar analiticas cuando el programa se detenga
+- activar web sockets
+- sacar analiticas cada 15 min
