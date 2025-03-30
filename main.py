@@ -1,45 +1,61 @@
+import os
+import sys
+import time
+import random
+import threading
+import subprocess
+import importlib
+import builtins
 from binance.client import Client
 from colorama import init, Fore
-import builtins
-import os
 import pygame
-import subprocess
-import threading
-import time
-import importlib
-import sys
-import random
 
-# Global Variables
-TIME = (time.strftime('%H:%M:%S')).replace(':', '')
-RAND_X = random.randint(10000, 99999)
-PIN = f'{TIME}{RAND_X}'
+
+def generate_uniques():
+    """Generates a unique PIN based on the current time and a random number."""
+    current_time = time.strftime('%H:%M:%S').replace(':', '')
+    random_number = random.randint(10000, 99999)
+    return current_time, f'{current_time}{random_number}'
+
+
+current_time, PIN = generate_uniques()
 print('-----------------')
-print('PIN:', PIN)
+print(f'PIN: {PIN}')
+print(f'Current Time: {current_time}')
 print('-----------------')
 
-# Dynamic Module Import
 module_name = 'constants.base'
-log_path = f'log/base/{PIN}'
-is_dev = False
-activate_force_logs = True
-if len(sys.argv) > 1 or sys.argv[1] == 'dev':
+if len(sys.argv) > 1:
     module_name = 'constants.dev'
-    log_path = f'log/dev/{PIN}'
-    is_dev = True
-
 constants = importlib.import_module(module_name)
 
-if len(sys.argv) > 1 and sys.argv[1] != 'dev':
+
+def configure_environment():
+    """Configures the environment based on command-line arguments."""
+    log_path = f'log/base/{PIN}'
     is_dev = False
-    activate_force_logs = False
-    args = sys.argv[1:]
-    for i, key in enumerate(constants.TRADING.keys()):
-        if i < len(args):
-            try:
-                constants.TRADING[key] = round(float(args[i]), 2)
-            except ValueError:
-                log_path = f'{args[i]}{PIN}'
+    activate_force_logs = True
+
+    if len(sys.argv) > 1:
+        if sys.argv[1] == 'dev':
+            log_path = f'log/dev/{PIN}'
+            is_dev = True
+        else:
+            is_dev = False
+            activate_force_logs = False
+            args = sys.argv[1:]
+            for i, key in enumerate(constants.TRADING.keys()):
+                if i < len(args):
+                    try:
+                        constants.TRADING[key] = round(float(args[i]), 2)
+                    except ValueError:
+                        log_path = f'{args[i]}{PIN}'
+
+    return log_path, is_dev, activate_force_logs
+
+
+log_path, is_dev, activate_force_logs = configure_environment()
+
 
 # Override built-in print function
 _original_print = builtins.print
@@ -47,8 +63,9 @@ _original_print = builtins.print
 
 def custom_print(*args, force=False, **kwargs):
     """
-    if `is_dev` is True, prints the message
-    If `is_dev` is False, only print if `force=True`.
+    Custom print function that respects the `is_dev` flag.
+    If `is_dev` is True, prints the message.
+    If `is_dev` is False, only prints if `force=True`.
     """
     if is_dev or force:
         _original_print(*args, **kwargs)
@@ -57,15 +74,17 @@ def custom_print(*args, force=False, **kwargs):
 builtins.print = custom_print
 
 # Print Constants
-print(f'STOP_LOSS_PERCENTAGE: {constants.TRADING['STOP_LOSS_PERCENTAGE']}%')
 print(
-    f'TAKE_PROFIT_PERCENTAGE: {constants.TRADING['TAKE_PROFIT_PERCENTAGE']}%')
-print(f'VARIATION_PERCENTAGE: {constants.TRADING['VARIATION_PERCENTAGE']}%')
+    f'STOP_LOSS_PERCENTAGE: {constants.TRADING['STOP_LOSS_PERCENTAGE']}%', force=True)
 print(
-    f'VARIATION_100K_PERCENTAGE: {constants.TRADING['VARIATION_100K_PERCENTAGE']}%')
+    f'TAKE_PROFIT_PERCENTAGE: {constants.TRADING['TAKE_PROFIT_PERCENTAGE']}%', force=True)
 print(
-    f'VARIATION_FAST_PERCENTAGE: {constants.TRADING['VARIATION_FAST_PERCENTAGE']}%')
-print(f'LOG_PATH: {log_path}')
+    f'VARIATION_PERCENTAGE: {constants.TRADING['VARIATION_PERCENTAGE']}%', force=True)
+print(
+    f'VARIATION_100K_PERCENTAGE: {constants.TRADING['VARIATION_100K_PERCENTAGE']}%', force=True)
+print(
+    f'VARIATION_FAST_PERCENTAGE: {constants.TRADING['VARIATION_FAST_PERCENTAGE']}%', force=True)
+print(f'LOG_PATH: {log_path}', force=True)
 
 # Initialize Sound and Binance Client
 if constants.SOUND['ACTIVE']:
@@ -75,6 +94,23 @@ client = Client('', '', tld='com')
 init(autoreset=True)
 
 possible_operations = {}
+results = {
+    constants.WIN['name']: {
+        constants.FAST_SHORT['name']: 0,
+        constants.LONG['name']: 0,
+        constants.SHORT['name']: 0,
+    },
+    constants.LOSE['name']: {
+        constants.FAST_SHORT['name']: 0,
+        constants.LONG['name']: 0,
+        constants.SHORT['name']: 0,
+    },
+    constants.IN_PROGRESS['name']: {
+        constants.FAST_SHORT['name']: 0,
+        constants.LONG['name']: 0,
+        constants.SHORT['name']: 0,
+    }
+}
 
 
 def get_usdt_ticks():
@@ -160,9 +196,10 @@ def print_target(tick, type, current_price):
     """Prints the result of the evaluation."""
     tp, sl = calculate_tp_sl(type, current_price)
 
-    if tick not in possible_operations or not possible_operations[tick]['is_active']:
-        save_operation(tick, type, current_price, tp, sl)
-        notify_operation(tick, type, current_price, tp, sl)
+    if len(possible_operations.keys()) != -1 and len(possible_operations.keys()) < 15:
+        if (tick not in possible_operations or not possible_operations[tick]['is_active']):
+            save_operation(tick, type, current_price, tp, sl)
+            notify_operation(tick, type, current_price, tp, sl)
 
 
 def calculate_tp_sl(type, current_price):
@@ -190,18 +227,26 @@ def save_operation(tick, type, current_price, tp, sl):
         'start_time': time.time(),
         'is_active': True
     }
+    results[constants.IN_PROGRESS['name']
+            ][type['name']] += 1
 
     if constants.ACTIVE_LOG:
         os.makedirs(log_path, exist_ok=True)
         sufix = str(current_price)[-3:]
+
+        slp = constants.TRADING["STOP_LOSS_PERCENTAGE"]
+        tpp = constants.TRADING["TAKE_PROFIT_PERCENTAGE"]
+        vp = constants.TRADING["VARIATION_PERCENTAGE"]
+        v100kp = constants.TRADING["VARIATION_100K_PERCENTAGE"]
+        vfp = constants.TRADING["VARIATION_FAST_PERCENTAGE"]
+
         with open(f'{log_path}/{type["name"]}-{tick}-{sufix}.txt', 'w') as file:
             file.write(f'PIN: {PIN}\n')
-            file.write(
-                f'VariationPercentage: {constants.TRADING['VARIATION_PERCENTAGE']}%\n')
-            file.write(
-                f'TakeProfitPercentage: {constants.TRADING['TAKE_PROFIT_PERCENTAGE']}%\n')
-            file.write(
-                f'StopLossPercentage: {constants.TRADING['STOP_LOSS_PERCENTAGE']}%\n')
+            file.write(f'STOP_LOSS_PERCENTAGE: {slp}%\n')
+            file.write(f'TAKE_PROFIT_PERCENTAGE: {tpp}%\n')
+            file.write(f'VARIATION_PERCENTAGE: {vp}%\n')
+            file.write(f'VARIATION_100K_PERCENTAGE: {v100kp}%\n')
+            file.write(f'VARIATION_FAST_PERCENTAGE: {vfp}%\n')
             file.write(f'-----------------\n')
             file.write(f'{type["emoji"]}{type["name"]}: {tick}\n')
             file.write(f'Hour: {time.strftime("%H:%M")}\n')
@@ -235,18 +280,67 @@ def evaluate_operation_evolution():
     Evaluates the evolution of operations and deactivates them if necessary.
     """
     print('[EVAL]PIN:', PIN)
-
     to_deactivate = []
     for tick, value in list(possible_operations.items()):
+
         if not value['is_active']:
             continue
 
-        deactivate = evaluate_single_operation(tick, value)
+        deactivate, win_or_lose, difference = evaluate_single_operation(
+            tick, value)
         if deactivate:
-            to_deactivate.append(tick)
+            to_deactivate.append({
+                'tick': tick,
+                'win_or_lose': win_or_lose,
+                'difference': difference
+            })
 
     for tick in to_deactivate:
-        possible_operations[tick]['is_active'] = False
+        win_or_lose = tick['win_or_lose']
+        difference = tick['difference']
+        possible_operations[tick['tick']]['is_active'] = False
+
+        # Update results
+        results[win_or_lose][possible_operations[tick['tick']]
+                             ['type']['name']] += 1
+        results[constants.IN_PROGRESS['name']
+                ][possible_operations[tick['tick']]['type']['name']] -= 1
+    save_results_to_file()
+
+
+def save_results_to_file():
+    """Saves the results to a file."""
+
+    if constants.ACTIVE_LOG:
+        os.makedirs(log_path, exist_ok=True)
+
+        in_progress_operations_count = sum(
+            results[constants.IN_PROGRESS['name']].values())
+        winning_operations_count = sum(
+            results[constants.WIN['name']].values())
+        losing_operations_count = sum(
+            results[constants.LOSE['name']].values())
+        total_operations_count = winning_operations_count + \
+            losing_operations_count + in_progress_operations_count
+
+        efficiency = 0
+        if total_operations_count > 0:
+            efficiency = round(winning_operations_count *
+                               100 / total_operations_count, 2)
+
+        with open(f'{log_path}/results.json', 'w') as file:
+            file.write('{\n')
+            file.write(f'  "results": {results},\n')
+            file.write(
+                f'  "in_progress_operations_count": {in_progress_operations_count},\n')
+            file.write(
+                f'  "winning_operations_count": {winning_operations_count},\n')
+            file.write(
+                f'  "losing_operations_count": {losing_operations_count},\n')
+            file.write(
+                f'  "total_operations_count": {total_operations_count},\n')
+            file.write(f'  "efficiency": {efficiency}\n')
+            file.write('}\n')
 
 
 def evaluate_single_operation(tick, value):
@@ -261,13 +355,13 @@ def evaluate_single_operation(tick, value):
         entry_price, current_price, operation_type)
     file_path = f'{log_path}/{operation_type["name"]}-{tick}-{str(entry_price)[-3:]}.txt'
 
-    deactivate, win_or_loss = check_deactivation(
+    deactivate, win_or_lose = check_deactivation(
         operation_type, current_price, value)
     log_operation(tick, file_path, entry_price, current_price,
-                  difference, operation_type, deactivate, win_or_loss)
+                  difference, operation_type, deactivate, win_or_lose)
     print_operation_status(tick, operation_type, entry_price,
                            current_price, value, difference)
-    return deactivate
+    return deactivate, win_or_lose, difference
 
 
 def calculate_difference(entry_price, current_price, operation_type):
@@ -282,14 +376,14 @@ def check_deactivation(operation_type, current_price, value):
     """Checks if an operation should be deactivated."""
     if operation_type['name'] == constants.LONG['name']:
         deactivate = current_price >= value['tp'] or current_price <= value['sl']
-        win_or_loss = 'WIN' if current_price >= value['tp'] else 'LOSS'
+        win_or_lose = constants.WIN['name'] if current_price >= value['tp'] else constants.LOSE['name']
     else:
         deactivate = current_price <= value['tp'] or current_price >= value['sl']
-        win_or_loss = 'WIN' if current_price <= value['tp'] else 'LOSS'
-    return deactivate, win_or_loss
+        win_or_lose = constants.WIN['name'] if current_price <= value['tp'] else constants.LOSE['name']
+    return deactivate, win_or_lose
 
 
-def log_operation(tick, file_path, entry_price, current_price, difference, operation_type, deactivate, win_or_loss):
+def log_operation(tick, file_path, entry_price, current_price, difference, operation_type, deactivate, win_or_lose):
     """Logs operation details to a file."""
     if constants.ACTIVE_LOG:
         with open(file_path, 'a') as file:
@@ -297,7 +391,7 @@ def log_operation(tick, file_path, entry_price, current_price, difference, opera
                 f'{time.strftime("%H:%M:%S")};{entry_price};{current_price};{difference};\n')
         if deactivate:
             os.rename(
-                file_path, f'{log_path}/{win_or_loss}-{operation_type["name"]}-{tick}-{str(entry_price)[-3:]}.txt')
+                file_path, f'{log_path}/{win_or_lose}-{operation_type["name"]}-{tick}-{str(entry_price)[-3:]}.txt')
 
 
 def print_operation_status(tick, operation_type, entry_price, current_price, value, difference):
