@@ -86,7 +86,7 @@ print(
     f'VARIATION_FAST_PERCENTAGE: {constants.TRADING['VARIATION_FAST_PERCENTAGE']}%', force=True)
 print(f'LOG_PATH: {log_path}', force=True)
 
-# Initialize Sound and Binance Client
+# Initialize Sound, Binance Client, and Colorama
 if constants.SOUND['ACTIVE']:
     pygame.mixer.init()
     pygame.mixer.music.load(constants.SOUND['PATH'])
