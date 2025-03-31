@@ -37,15 +37,10 @@ def calcular_macd(klines):
 def buscarticks():
     ticks = []
     lista_ticks = client.futures_symbol_ticker()
-    print('Numero de monedas encontradas #' + str(len(lista_ticks)))
-
     for tick in lista_ticks:
         if tick['symbol'][-4:] != 'USDT':  # seleccionar todas las monedas en el par USDT
             continue
         ticks.append(tick['symbol'])
-
-    print('Numero de monedas encontradas en el par USDT: #' + str(len(ticks)))
-
     return ticks
 
 
@@ -137,7 +132,7 @@ def porcentaje_klines(tick, klines, knumber):
 
 while True:
     ticks = buscarticks()
-    print('Escaneando monedas...')
+    print('Escaneando...')
     print('')
     for tick in ticks:
         klines = get_klines(tick)
@@ -145,6 +140,6 @@ while True:
         if knumber > 0:
             knumber = knumber - 1
             porcentaje_klines(tick, klines, knumber)
-    print('Esperando 30 segundos...')
+    print('Sleep 30 segundos...')
     print('')
     time.sleep(30)
